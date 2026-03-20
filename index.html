@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resume Tailor</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Vercel-ready resume generator</p>
+        <h1>Paste your resume, paste a job description, download a tailored PDF.</h1>
+        <p class="lede">
+          This app takes your current resume and a target job description, asks an OpenAI model to tailor the content truthfully,
+          and returns a polished PDF you can download immediately.
+        </p>
+      </section>
+
+      <form id="resume-form" class="card form-grid">
+        <label>
+          <span>Current resume</span>
+          <textarea id="currentResume" name="currentResume" rows="18" placeholder="Paste your current resume here..." required></textarea>
+        </label>
+
+        <label>
+          <span>Job description</span>
+          <textarea id="jobDescription" name="jobDescription" rows="18" placeholder="Paste the full job description here..." required></textarea>
+        </label>
+
+        <label class="full-width">
+          <span>Extra context (optional)</span>
+          <textarea id="extraContext" name="extraContext" rows="4" placeholder="Anything else the model should know? Example: focus on backend API work, keep it to one page, emphasize B2B SaaS."></textarea>
+        </label>
+
+        <div class="actions full-width">
+          <button type="submit" id="submitButton">Generate tailored PDF</button>
+          <p id="status" class="status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <section id="result" class="card result hidden">
+        <div class="result-header">
+          <div>
+            <p class="eyebrow">Generated output</p>
+            <h2 id="resultName">Tailored resume</h2>
+            <p id="resultHeadline" class="muted"></p>
+          </div>
+          <a id="downloadLink" class="download-link" download="tailored_resume.pdf">Download PDF</a>
+        </div>
+
+        <div class="result-grid">
+          <div>
+            <h3>Summary</h3>
+            <ul id="summaryList"></ul>
+          </div>
+          <div>
+            <h3>Skills</h3>
+            <p id="skillsText"></p>
+          </div>
+          <div class="full-width">
+            <h3>Tailoring notes</h3>
+            <ul id="notesList"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
