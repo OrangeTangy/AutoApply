@@ -1,110 +1,81 @@
-# Resume Tailor for Vercel
+# Continuous Job Intake Assistant
 
-A small web app you can deploy to Vercel that lets a user:
+This repository now focuses on **continuous job-intake automation with a required human review step**.
+It can:
 
-1. Paste their current resume.
-2. Paste a target job description.
-3. Generate a tailored resume with OpenAI.
-4. Download the result as a PDF.
+1. Tailor a truthful resume draft from a job description.
+2. Export both an ATS-friendly PDF and a LaTeX source file.
+3. Poll an Outlook inbox through Microsoft Graph for Handshake or employer application links.
+4. Prepare per-job application packets for review instead of blind auto-submitting.
 
-## What changed
+## Why the review step matters
 
-This project is now built as a **publishable web app**, not a browser-auto-apply bot. The main flow is:
+The automation in this repo is intentionally designed to **prepare materials for your approval**, not submit applications without you seeing them.
+That keeps the workflow aligned with truthful self-representation and gives you a chance to verify compensation, location,
+work authorization, and any screening questions before submitting.
 
-- a static frontend (`index.html`, `app.js`, `styles.css`)
-- a Vercel Python serverless function (`api/generate.py`)
-- shared Python helpers for prompting the LLM and rendering the PDF (`page_solver/`)
+## Project layout
 
-## Stack
+- `index.html`, `app.js`, `styles.css`: browser UI for one-off tailoring.
+- `generate.py`: simple HTTP handler for the frontend.
+- `resume_service.py`: resume tailoring, LaTeX generation, and JSON helpers.
+- `pdf_renderer.py`: lightweight ATS-friendly PDF rendering.
+- `outlook_watcher.py`: Outlook inbox polling plus reviewed application packet generation.
+- `main.py`: CLI entry point for one-off tailoring or continuous inbox polling.
 
-- **Frontend:** plain HTML/CSS/JS
-- **Backend:** Vercel Python Runtime via `api/generate.py`
-- **LLM:** OpenAI Responses API
-- **PDF generation:** built-in lightweight PDF renderer
+## Outlook inbox polling
 
-## Local setup
+The watcher uses the Microsoft Graph inbox endpoint with a bearer token you provide via:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-export OPENAI_API_KEY=your_key_here
+export OUTLOOK_GRAPH_TOKEN=your_graph_token_here
 ```
 
-If you want to run the full Vercel experience locally, install the Vercel CLI and use:
+Then start the continuous worker with:
 
 ```bash
-vercel dev
+python main.py watch-inbox \
+  --resume-file resume.tex \
+  --output-dir artifacts/outlook_jobs
 ```
 
-The Vercel Python Runtime docs say your serverless functions live in the root `api/` directory, and the example local workflow is `vercel dev`. See the official docs for details: <https://vercel.com/docs/functions/runtimes/python>. The `vercel.json` file is used here only to configure the function duration and the `/api/generate` rewrite. See also: <https://vercel.com/docs/project-configuration/vercel-json>.
+Helpful flags:
 
-## Deploy to Vercel
+- `--run-once`: poll one time and exit.
+- `--poll-interval 300`: change the interval in seconds.
+- `--max-messages 20`: inspect more recent emails each cycle.
+- `--extra-context "highlight internships and API work"`: apply repeated tailoring guidance.
 
-1. Push this repo to GitHub.
-2. Import the repo into Vercel.
-3. Set the environment variable `OPENAI_API_KEY` in the Vercel project settings.
-4. Deploy.
+Each job packet folder contains:
 
-Once deployed, the site serves the form from `/` and the resume-generation API from `/api/generate`.
+- `tailored_resume.tex`
+- `tailored_resume.pdf`
+- `application_packet.json`
+- `lead.json`
 
-## App usage
-
-1. Paste your current resume into the left textarea.
-2. Paste the target job description into the right textarea.
-3. Optionally add extra context like “keep it to one page” or “emphasize backend API work.”
-4. Click **Generate tailored PDF**.
-5. Download the generated PDF from the result card.
-
-## Local CLI helper
-
-There is also a local CLI for development/testing:
+## One-off tailoring from files
 
 ```bash
-python -m page_solver.main \
-  --resume-file sample_resume.txt \
+python main.py tailor \
+  --resume-file resume.tex \
   --job-file sample_job.txt \
   --output-pdf artifacts/tailored_resume.pdf \
+  --output-tex artifacts/tailored_resume.tex \
   --output-json artifacts/result.json
 ```
 
-## API contract
+## Frontend flow
 
-`POST /api/generate`
+Open the site, paste your current resume or LaTeX source, paste the job description, and the app will return:
 
-Request body:
-
-```json
-{
-  "currentResume": "full pasted resume text",
-  "jobDescription": "full pasted job description",
-  "extraContext": "optional guidance",
-  "model": "gpt-4.1-mini"
-}
-```
-
-Response body:
-
-```json
-{
-  "resume": {
-    "name": "Jane Doe",
-    "headline": "Senior Backend Engineer",
-    "contact": ["jane@example.com", "Austin, TX"],
-    "summary": ["..."],
-    "skills": ["Python", "FastAPI"],
-    "experience": [],
-    "projects": [],
-    "education": [],
-    "tailoringNotes": ["..."]
-  },
-  "pdfBase64": "...",
-  "fileName": "jane_doe_tailored_resume.pdf"
-}
-```
+- a tailored PDF,
+- a tailored LaTeX file,
+- a concise summary of changes,
+- a review reminder before submission.
 
 ## Notes
 
-- The prompt explicitly tells the model not to invent experience or credentials.
-- The generated PDF is a clean, ATS-friendly layout built with a lightweight pure-Python PDF renderer.
-- Because this is designed for Vercel serverless functions, keep requests reasonably sized.
+- If `OPENAI_API_KEY` is present, the tailoring flow will try the OpenAI Responses API first and fall back to a deterministic local heuristic if that request fails.
+- The prompt explicitly tells the model **not** to invent experience, credentials, or achievements.
+- The Outlook worker currently extracts Handshake links first when present, then falls back to the first URL in the message.
+- This repo prepares application materials; it does not promise reliable one-click submission across arbitrary employer sites.
