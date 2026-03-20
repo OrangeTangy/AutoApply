@@ -23,55 +23,81 @@ work authorization, and any screening questions before submitting.
 - `outlook_watcher.py`: Outlook inbox polling plus reviewed application packet generation.
 - `main.py`: CLI entry point for one-off tailoring or continuous inbox polling.
 
-## Outlook inbox polling
 
-The watcher uses the Microsoft Graph inbox endpoint with a bearer token you provide via:
-
-```bash
-export OUTLOOK_GRAPH_TOKEN=your_graph_token_here
-```
-
-Then start the continuous worker with:
-
-```bash
-python main.py watch-inbox \
-  --resume-file resume.tex \
-  --output-dir artifacts/outlook_jobs
-```
-
-Helpful flags:
-
-- `--run-once`: poll one time and exit.
-- `--poll-interval 300`: change the interval in seconds.
-- `--max-messages 20`: inspect more recent emails each cycle.
-- `--extra-context "highlight internships and API work"`: apply repeated tailoring guidance.
-
-Each job packet folder contains:
-
-- `tailored_resume.tex`
-- `tailored_resume.pdf`
-- `application_packet.json`
-- `lead.json`
-
-## One-off tailoring from files
 
 ```bash
 python main.py tailor \
   --resume-file resume.tex \
-  --job-file sample_job.txt \
+
   --output-pdf artifacts/tailored_resume.pdf \
   --output-tex artifacts/tailored_resume.tex \
   --output-json artifacts/result.json
 ```
 
+
+
+Use those files like this:
+
+- open `lead.json` to see the source link and email metadata
+- open `application_packet.json` to review the generated summary, checklist, and notes
+- edit `tailored_resume.tex` if you want to refine wording or formatting
+- use `tailored_resume.pdf` as the submission-ready draft after your review
+
 ## Frontend flow
 
-Open the site, paste your current resume or LaTeX source, paste the job description, and the app will return:
+The browser UI is meant for one-off generation when you want to paste content manually.
+
+Open the site, paste your current resume or LaTeX source, paste the job description, and submit the form.
+The app will return:
 
 - a tailored PDF,
 - a tailored LaTeX file,
 - a concise summary of changes,
-- a review reminder before submission.
+- a review reminder before submission,
+- an inline LaTeX preview in the browser.
+
+## Command reference
+
+### `python main.py tailor`
+
+Use this when you already have a job description and want one reviewed resume packet.
+
+Main options:
+
+- `--resume-file`: required path to your current resume text or LaTeX source
+- `--job-file`: required path to the target job description text file
+- `--extra-context`: optional additional tailoring instructions
+- `--model`: OpenAI model name when `OPENAI_API_KEY` is set
+- `--output-pdf`: where to write the generated PDF
+- `--output-tex`: where to write the generated LaTeX
+- `--output-json`: where to write the JSON payload
+
+### `python main.py watch-inbox`
+
+Use this when you want the tool to keep checking your Outlook inbox for new job emails.
+
+Main options:
+
+- `--resume-file`: required path to your base resume
+- `--output-dir`: directory where per-job folders will be written
+- `--state-file`: path to the processed-message state file
+- `--poll-interval`: seconds between inbox polls
+- `--max-messages`: how many recent inbox emails to inspect each cycle
+- `--run-once`: do one cycle and exit
+- `--extra-context`: repeated tailoring guidance applied to every job
+- `--model`: OpenAI model name when `OPENAI_API_KEY` is set
+
+## Typical workflow
+
+A practical way to use this repo is:
+
+1. Keep your master resume in `resume.tex`.
+2. Test the tailoring pipeline with `python main.py tailor` on one job description.
+3. Start the background watcher with `python main.py watch-inbox --resume-file resume.tex --output-dir artifacts/outlook_jobs`.
+4. When a new Handshake or employer email arrives, open the generated folder for that job.
+5. Review the `.tex`, `.pdf`, and `.json` artifacts.
+6. Make any manual edits you want.
+7. Submit the application yourself after verifying everything is accurate.
 
 ## Notes
 
