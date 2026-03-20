@@ -23,128 +23,18 @@ work authorization, and any screening questions before submitting.
 - `outlook_watcher.py`: Outlook inbox polling plus reviewed application packet generation.
 - `main.py`: CLI entry point for one-off tailoring or continuous inbox polling.
 
-## Requirements
 
-You should have:
-
-- Python 3.10+ installed.
-- A base resume file in plain text or LaTeX.
-- Optional: `OPENAI_API_KEY` if you want model-assisted tailoring instead of the local heuristic fallback.
-- Required for inbox polling: `OUTLOOK_GRAPH_TOKEN` with Microsoft Graph access to read your inbox.
-
-Set environment variables like this:
-
-```bash
-export OPENAI_API_KEY=your_openai_key_here
-export OUTLOOK_GRAPH_TOKEN=your_graph_token_here
-```
-
-If `OPENAI_API_KEY` is missing, the app still works using the built-in local tailoring logic.
-If `OUTLOOK_GRAPH_TOKEN` is missing, the one-off `tailor` command still works, but `watch-inbox` will not.
-
-## Quick start
-
-### 1. Prepare your files
-
-Create or locate:
-
-- your current resume file, for example `resume.tex`
-- a sample or real job description file, for example `job.txt`
-
-Example `job.txt`:
-
-```text
-Backend Software Engineer at ExampleCo
-Build Python APIs, improve CI/CD, and support cloud infrastructure.
-Experience with SQL, AWS, and FastAPI is preferred.
-```
-
-### 2. Generate one tailored resume packet
-
-Run:
 
 ```bash
 python main.py tailor \
   --resume-file resume.tex \
-  --job-file job.txt \
+
   --output-pdf artifacts/tailored_resume.pdf \
   --output-tex artifacts/tailored_resume.tex \
   --output-json artifacts/result.json
 ```
 
-What this does:
 
-- reads your current resume from `--resume-file`
-- reads the target job description from `--job-file`
-- generates a tailored resume structure
-- writes a PDF, LaTeX file, and JSON summary into `artifacts/`
-
-What you should review after it runs:
-
-- `artifacts/tailored_resume.pdf`: final rendered resume draft
-- `artifacts/tailored_resume.tex`: editable ATS-friendly LaTeX version
-- `artifacts/result.json`: structured data, extracted skills, notes, and base64 PDF payload
-
-### 3. Continuously watch your Outlook inbox
-
-The watcher uses the Microsoft Graph inbox endpoint with a bearer token you provide via:
-
-```bash
-export OUTLOOK_GRAPH_TOKEN=your_graph_token_here
-```
-
-Then start the continuous worker with:
-
-```bash
-python main.py watch-inbox \
-  --resume-file resume.tex \
-  --output-dir artifacts/outlook_jobs
-```
-
-This command will:
-
-- poll recent Outlook inbox messages
-- extract Handshake links first when available
-- fall back to the first detected URL in the email if no Handshake link is found
-- create a per-job application packet for each new message lead
-- remember processed message IDs in a state file so the same lead is not reprocessed every cycle
-
-Helpful flags:
-
-- `--run-once`: poll one time and exit.
-- `--poll-interval 300`: change the interval in seconds.
-- `--max-messages 20`: inspect more recent emails each cycle.
-- `--extra-context "highlight internships and API work"`: apply repeated tailoring guidance.
-- `--state-file artifacts/outlook_jobs/state.json`: override where processed lead IDs are stored.
-
-Example one-shot inbox run for testing:
-
-```bash
-python main.py watch-inbox \
-  --resume-file resume.tex \
-  --output-dir artifacts/outlook_jobs \
-  --run-once
-```
-
-### 4. Review the generated packet for each job
-
-Each generated job folder contains:
-
-- `tailored_resume.tex`
-- `tailored_resume.pdf`
-- `application_packet.json`
-- `lead.json`
-
-Typical folder shape:
-
-```text
-artifacts/outlook_jobs/
-  exampleco-backend-software-engineer/
-    tailored_resume.tex
-    tailored_resume.pdf
-    application_packet.json
-    lead.json
-```
 
 Use those files like this:
 
