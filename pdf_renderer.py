@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from .resume_service import ResumeSection, TailoredResume
+from resume_service import ResumeSection, TailoredResume
 
 PAGE_WIDTH = 612
 PAGE_HEIGHT = 792

@@ -8,6 +8,9 @@ const summaryList = document.getElementById('summaryList');
 const notesList = document.getElementById('notesList');
 const skillsText = document.getElementById('skillsText');
 const downloadLink = document.getElementById('downloadLink');
+const downloadTexLink = document.getElementById('downloadTexLink');
+const latexPreview = document.getElementById('latexPreview');
+const reviewBanner = document.getElementById('reviewBanner');
 
 function renderList(target, items) {
   target.innerHTML = '';
@@ -30,7 +33,7 @@ function base64ToBlob(base64, type) {
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   submitButton.disabled = true;
-  statusEl.textContent = 'Generating tailored resume…';
+  statusEl.textContent = 'Generating reviewed application materials…';
   resultSection.classList.add('hidden');
 
   const payload = {
@@ -50,8 +53,11 @@ form.addEventListener('submit', async (event) => {
       throw new Error(data.error || 'Failed to generate resume.');
     }
 
-    const blob = base64ToBlob(data.pdfBase64, 'application/pdf');
-    const pdfUrl = URL.createObjectURL(blob);
+    const pdfBlob = base64ToBlob(data.pdfBase64, 'application/pdf');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    const texBlob = base64ToBlob(data.latexBase64, 'application/x-tex');
+    const texUrl = URL.createObjectURL(texBlob);
+    const latexText = atob(data.latexBase64);
 
     resultName.textContent = data.resume.name || 'Tailored resume';
     resultHeadline.textContent = data.resume.headline || '';
@@ -60,8 +66,14 @@ form.addEventListener('submit', async (event) => {
     renderList(notesList, data.resume.tailoringNotes);
     downloadLink.href = pdfUrl;
     downloadLink.download = data.fileName || 'tailored_resume.pdf';
+    downloadTexLink.href = texUrl;
+    downloadTexLink.download = data.latexFileName || 'tailored_resume.tex';
+    latexPreview.textContent = latexText;
+    reviewBanner.textContent = data.reviewRequired
+      ? 'Review required: confirm the LaTeX and PDF are factual before you submit anywhere.'
+      : '';
     resultSection.classList.remove('hidden');
-    statusEl.textContent = 'Done — your tailored PDF is ready to download.';
+    statusEl.textContent = 'Done — your reviewed PDF and LaTeX draft are ready.';
   } catch (error) {
     statusEl.textContent = error.message;
   } finally {
